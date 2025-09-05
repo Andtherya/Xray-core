@@ -1,4 +1,4 @@
-name: Build Xray
+name: Build Xray Linux
 
 on:
   workflow_dispatch:
@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [linux, windows]
         arch: [amd64, arm64]
 
     steps:
@@ -32,22 +31,16 @@ jobs:
 
     - name: Build Xray (static + strip symbols)
       run: |
-        echo "Building for ${{ matrix.os }}/$${{ matrix.arch }}"
-        OUT_NAME="xray-${{ matrix.os }}-${{ matrix.arch }}"
-        if [ "${{ matrix.os }}" = "windows" ]; then
-          OUT_NAME="${OUT_NAME}.exe"
-        fi
-        CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
+        echo "Building for Linux/${{ matrix.arch }}"
+        OUT_NAME="xray-linux-${{ matrix.arch }}"
+        CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.arch }} \
         go build -tags "with_vless with_vmess with_trojan" \
         -ldflags "-s -w -extldflags '-static'" \
         -o $OUT_NAME ./main
 
     - name: UPX compress binary
       run: |
-        OUT_NAME="xray-${{ matrix.os }}-${{ matrix.arch }}"
-        if [ "${{ matrix.os }}" = "windows" ]; then
-          OUT_NAME="${OUT_NAME}.exe"
-        fi
+        OUT_NAME="xray-linux-${{ matrix.arch }}"
         upx --best --lzma $OUT_NAME
 
     - name: Create Git tag
@@ -76,6 +69,5 @@ jobs:
         files: |
           xray-linux-amd64
           xray-linux-arm64
-          xray-windows-amd64.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
