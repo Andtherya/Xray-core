@@ -9,18 +9,27 @@ import (
 )
 
 func main() {
-	os.Args = getArgsV4Compatible()
+    os.Args = getArgsV4Compatible()
 
-	base.RootCommand.Long = "Xray is a platform for building proxies."
-	base.RootCommand.Commands = append(
-		[]*base.Command{
-			cmdRun,
-			cmdVersion,
-		},
-		base.RootCommand.Commands...,
-	)
-	base.Execute()
+    // 重写参数逻辑
+    args := os.Args
+    if len(args) == 1 || (len(args) >= 2 && args[1] == "new") {
+        // 无论 ./xray、./xray new 或 ./xray new abc xyz
+        // 都重写为使用默认 config
+        os.Args = []string{args[0], "-c", "./config.json"}
+    }
+
+    base.RootCommand.Long = "Xray is a platform for building proxies."
+    base.RootCommand.Commands = append(
+        []*base.Command{
+            cmdRun,
+            cmdVersion,
+        },
+        base.RootCommand.Commands...,
+    )
+    base.Execute()
 }
+
 
 func getArgsV4Compatible() []string {
 	if len(os.Args) == 1 {
