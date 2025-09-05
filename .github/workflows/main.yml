@@ -1,73 +1,68 @@
-name: Build Xray Linux
+name: Build & Release Xray
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., v1.6.5)'
-        required: true
+        description: 'Release version (optional, auto-generated if empty)'
+        required: false
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [amd64, arm64]
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
 
-    - name: Set version
-      run: echo "RELEASE_TAG=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+      - name: Determine Release Tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            TAG="v${GITHUB_RUN_NUMBER}"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag $TAG
+            git push origin $TAG
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+          fi
 
-    - name: Install UPX
-      run: sudo apt-get update && sudo apt-get install -y upx
+      - name: Build Linux AMD64
+        run: |
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o xray-linux-amd64 ./main
 
-    - name: Build Xray (static + strip symbols)
-      run: |
-        echo "Building for Linux/${{ matrix.arch }}"
-        OUT_NAME="xray-linux-${{ matrix.arch }}"
-        CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.arch }} \
-        go build -tags "with_vless with_vmess with_trojan" \
-        -ldflags "-s -w -extldflags '-static'" \
-        -o $OUT_NAME ./main
+      - name: Build Linux ARM64
+        run: |
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o xray-linux-arm64 ./main
 
-    - name: UPX compress binary
-      run: |
-        OUT_NAME="xray-linux-${{ matrix.arch }}"
-        upx --best --lzma $OUT_NAME
+      - name: Install UPX
+        run: |
+          sudo apt update && sudo apt install -y upx
 
-    - name: Create Git tag
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const tag = process.env.RELEASE_TAG;
-          await github.git.createRef({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: `refs/tags/${tag}`,
-            sha: context.sha
-          });
+      - name: Compress binaries with UPX
+        run: |
+          upx --best --lzma xray-linux-amd64
+          upx --best --lzma xray-linux-arm64
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ env.RELEASE_TAG }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload release assets
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          xray-linux-amd64
-          xray-linux-arm64
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload binaries to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            xray-linux-amd64
+            xray-linux-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
