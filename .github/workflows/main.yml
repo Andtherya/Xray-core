@@ -1,0 +1,83 @@
+name: Build Xray
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.6.5)'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, windows]
+        arch: [amd64, arm64]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Set version
+      run: echo "RELEASE_TAG=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+    - name: Install UPX
+      run: sudo apt-get update && sudo apt-get install -y upx
+
+    - name: Build Xray (static + strip symbols)
+      run: |
+        echo "Building for ${{ matrix.os }}/$${{ matrix.arch }}"
+        OUT_NAME="xray-${{ matrix.os }}-${{ matrix.arch }}"
+        CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
+        go build -tags "with_vless with_vmess with_trojan" \
+        -ldflags "-s -w -extldflags '-static'" -o $OUT_NAME ./main.go
+
+    - name: UPX compress binary
+      run: |
+        OUT_NAME="xray-${{ matrix.os }}-${{ matrix.arch }}"
+        upx --best --lzma $OUT_NAME
+
+    - name: Package binary
+      run: |
+        OUT_NAME="xray-${{ matrix.os }}-${{ matrix.arch }}"
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          zip -r "$OUT_NAME.zip" "$OUT_NAME"
+        else
+          tar -czf "$OUT_NAME.tar.gz" "$OUT_NAME"
+        fi
+
+    - name: Create Git tag
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const tag = process.env.RELEASE_TAG;
+          await github.git.createRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: `refs/tags/${tag}`,
+            sha: context.sha
+          });
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.RELEASE_TAG }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload release assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          xray-linux-amd64.tar.gz
+          xray-linux-arm64.tar.gz
+          xray-windows-amd64.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
