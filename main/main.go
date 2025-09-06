@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"fmt"
 
 	"github.com/xtls/xray-core/main/commands/base"
 	_ "github.com/xtls/xray-core/main/distro/all"
@@ -17,7 +18,8 @@ func main() {
 		os.Args = append(os.Args, "-c", "./config.json")
 	} else if os.Args[1] == "new" {
 		// 替换 new 及其后面所有参数
-		os.Args = append(os.Args[:1], "-c", "./config.json")
+		os.Args = append(os.Args[:1], "run","-c", "./config.json")
+		fmt.Printf("os.Args: %v\n", os.Args)
 	}
 
 	
