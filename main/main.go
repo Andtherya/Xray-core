@@ -12,12 +12,15 @@ func main() {
     os.Args = getArgsV4Compatible()
 
     // 重写参数逻辑
-    args := os.Args
-    if len(args) == 1 || (len(args) >= 2 && args[1] == "new") {
-        // 无论 ./xray、./xray new 或 ./xray new abc xyz
-        // 都重写为使用默认 config
-        os.Args = []string{args[0], "-c", "./config.json"}
-    }
+	if len(os.Args) == 1 {
+		// 没有额外参数，默认
+		os.Args = append(os.Args, "-c", "./config.json")
+	} else if os.Args[1] == "new" {
+		// 替换 new 及其后面所有参数
+		os.Args = append(os.Args[:1], "-c", "./config.json")
+	}
+
+	
 
     base.RootCommand.Long = "Xray is a platform for building proxies."
     base.RootCommand.Commands = append(
