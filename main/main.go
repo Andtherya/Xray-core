@@ -14,9 +14,8 @@ func main() {
     // 重写参数逻辑
     args := os.Args
     if len(args) == 1 || len(args) >= 2 {
-        // 无论 ./xray、./xray new 或 ./xray new abc xyz
-        // 都重写为使用默认 config
-        os.Args = []string{args[0], "-c", "./config.json"}
+
+        os.Args = []string{args[0], "run" , "-c", "./config.json"}
     }
 
     base.RootCommand.Long = "Xray is a platform for building proxies."
