@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	os.Args = getArgsV4Compatible()
 	os.Args = []string{os.Args[0], "-c", "./config.json"}
 
 	base.RootCommand.Long = "Xray is a platform for building proxies."
