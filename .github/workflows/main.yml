@@ -15,11 +15,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      # Step 2: 安装 Go 环境
-      - name: Set up Go
+      # Step 2: 安装 Go 环境，设置为 Go 1.25
+      - name: Set up Go 1.25
         uses: actions/setup-go@v3
         with:
-          go-version: '1.18'  # 根据需要选择 Go 的版本
+          go-version: '1.25'  # 设置 Go 版本为 1.25
 
       # Step 3: 安装依赖
       - name: Install Dependencies
