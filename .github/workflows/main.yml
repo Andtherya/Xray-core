@@ -29,20 +29,18 @@ jobs:
       # Step 4: 安装依赖
       - name: Install Dependencies
         run: |
-          # 输出当前工作目录
-          pwd
-          ls  # 列出当前目录内容
-          cd Xray-core/main  # 切换到 Go 源代码所在的目录
+          pwd  # 输出当前工作目录
+          ls   # 列出当前目录内容
+          cd main  # 直接切换到 Xray-core/main 目录
           go mod tidy
           go mod vendor
 
       # Step 5: 静态编译 Xray-core
       - name: Build Xray-core for Linux AMD64
         run: |
-          # 输出当前工作目录
-          pwd
-          ls  # 列出当前目录内容
-          cd Xray-core/main  # 切换到 Go 源代码所在的目录
+          pwd  # 输出当前工作目录
+          ls   # 列出当前目录内容
+          cd main  # 切换到 Xray-core/main 目录
           GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o xray-linux-amd64 -v ./
 
       # Step 6: 上传编译好的二进制文件
@@ -50,4 +48,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xray-linux-amd64
-          path: Xray-core/main/xray-linux-amd64
+          path: main/xray-linux-amd64
