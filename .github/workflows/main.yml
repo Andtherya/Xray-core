@@ -23,8 +23,8 @@ jobs:
 
     - name: Build Xray (Static and Minimal Binary)
       run: |
-        # 确保 Go 的静态链接和最小化二进制
-        GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -o xray ./main.go  # 或根据实际路径修改
+        # 编译路径调整为 Xray-core/main/main.go
+        GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -o xray ./main/main.go
 
     - name: Check Binary Size
       run: |
