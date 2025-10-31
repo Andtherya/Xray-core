@@ -15,26 +15,31 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      # Step 2: 安装 Go 环境，设置为 Go 1.25
+      # Step 2: 查看目录结构（调试步骤）
+      - name: List directory contents
+        run: |
+          ls -R  # 列出所有目录和文件，帮助确认项目结构
+
+      # Step 3: 安装 Go 环境，设置为 Go 1.25
       - name: Set up Go 1.25
         uses: actions/setup-go@v3
         with:
           go-version: '1.25'  # 设置 Go 版本为 1.25
 
-      # Step 3: 安装依赖
+      # Step 4: 安装依赖
       - name: Install Dependencies
         run: |
           cd Xray-core/main  # 切换到 Go 源代码所在的目录
           go mod tidy
           go mod vendor
 
-      # Step 4: 静态编译 Xray-core
+      # Step 5: 静态编译 Xray-core
       - name: Build Xray-core for Linux AMD64
         run: |
           cd Xray-core/main  # 切换到 Go 源代码所在的目录
           GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o xray-linux-amd64 -v ./
 
-      # Step 5: 上传编译好的二进制文件
+      # Step 6: 上传编译好的二进制文件
       - name: Upload Linux AMD64 Binary
         uses: actions/upload-artifact@v4
         with:
